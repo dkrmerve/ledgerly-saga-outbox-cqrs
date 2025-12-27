@@ -1,0 +1,91 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ledgerly
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: ledgerly
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        max.poll.records: 100
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://mongo:27017/ledgerly}
+
+  redis:
+    host: ${SPRING_REDIS_HOST:redis}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 2s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.example.ledgerly: INFO
+
+# ---------- App-specific ----------
+ledgerly:
+  security:
+    enabled: ${LEDGERLY_SECURITY_ENABLED:false}
+
+  masterpass:
+    baseUrl: ${LEDGERLY_MASTERPASS_BASEURL:http://masterpass-mock}
+    bearerToken: ${LEDGERLY_MASTERPASS_BEARERTOKEN:FIXED_DEMO_TOKEN}
+    # resilience demo knobs (optional)
+    timeoutMs: ${LEDGERLY_MASTERPASS_TIMEOUT_MS:1500}
+
+  kafka:
+    topics:
+      sagaCommands: ${LEDGERLY_KAFKA_TOPICS_SAGACOMMANDS:ledgerly.saga.commands}
+      domainEvents: ${LEDGERLY_KAFKA_TOPICS_DOMAINEVENTS:ledgerly.domain.events}
+      auditEvents: ${LEDGERLY_KAFKA_TOPICS_AUDITEVENTS:ledgerly.audit.events}
+
+  redis:
+    # distributed lock + dedup TTLs (demo)
+    lockTtlSeconds: ${LEDGERLY_REDIS_LOCK_TTL_SECONDS:15}
+    inboxTtlSeconds: ${LEDGERLY_INBOX_TTL_SECONDS:86400}

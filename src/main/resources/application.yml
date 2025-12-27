@@ -1,0 +1,112 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ledgerly
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ledgerly
+    username: ledgerly
+    password: ledgerly
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: ledgerly
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        isolation.level: read_committed
+    listener:
+      ack-mode: manual
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/ledgerly
+
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+ledgerly:
+  kafka:
+    topics:
+      sagaCommands: ledgerly.saga.commands
+      domainEvents: ledgerly.domain.events
+      auditEvents: ledgerly.audit.events
+      sagaCommandsDlt: ledgerly.saga.commands.DLT
+  outbox:
+    batchSize: 50
+    leaseSeconds: 20
+    publishFixedDelayMs: 700
+  dedup:
+    redisTtlSeconds: 86400
+  lock:
+    redisTtlMillis: 3000
+  payment:
+    masterpassBearerToken: "MASTERPASS_FIXED_TOKEN"
+    simulateLatencyMs: 180
+    failOnAmountEndingWith: "13"  # demo deterministic failure trigger
+  security:
+    jwtHmacSecret: "change-me-to-a-long-random-secret-change-me"
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      masterpass:
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 5
+  timelimiter:
+    instances:
+      masterpass:
+        timeoutDuration: 600ms
+  retry:
+    instances:
+      masterpass:
+        maxAttempts: 2
+        waitDuration: 150ms
+
+# -----------------------------------------------------------------------------
+# AWS awareness (placeholders only, NO integration):
+# - In production, move secrets like jwtHmacSecret/masterpassBearerToken to:
+#   AWS Secrets Manager or SSM Parameter Store.
+# - For container deployment:
+#   ECS/Fargate task definition or EKS deployment.
+# - For logs/metrics:
+#   CloudWatch Logs + OpenTelemetry (OTEL) exporter.
+# -----------------------------------------------------------------------------
+# ledgerly:
+#   aws:
+#     region: eu-west-1
+#     secrets:
+#       jwtSecretArn: arn:aws:secretsmanager:...
+#       masterpassTokenArn: arn:aws:secretsmanager:...
+#     networking:
+#       alb: true
+#       privateSubnets: true
+# -----------------------------------------------------------------------------

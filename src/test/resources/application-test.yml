@@ -1,0 +1,17 @@
+ledgerly:
+  security:
+    enabled: false
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  profiles:
+    active: test
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    org.flywaydb: INFO

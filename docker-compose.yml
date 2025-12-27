@@ -1,0 +1,107 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: ledgerly-postgres
+    environment:
+      POSTGRES_DB: ledgerly
+      POSTGRES_USER: ledgerly
+      POSTGRES_PASSWORD: ledgerly
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledgerly -d ledgerly"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongodb:
+    image: mongo:7
+    container_name: ledgerly-mongo
+    environment:
+      MONGO_INITDB_DATABASE: ledgerly
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' localhost:27017/ledgerly | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: ledgerly-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: ledgerly-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ledgerly-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ledgerly
+      SPRING_DATASOURCE_USERNAME: ledgerly
+      SPRING_DATASOURCE_PASSWORD: ledgerly
+
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/ledgerly
+
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: "6379"
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+      LEDGERLY_SECURITY_ENABLED: "false"
+
+      LEDGERLY_KAFKA_TOPICS_SAGACOMMANDS: ledgerly.saga.commands
+      LEDGERLY_KAFKA_TOPICS_DOMAINEVENTS: ledgerly.domain.events
+      LEDGERLY_KAFKA_TOPICS_AUDITEVENTS: ledgerly.audit.events
+
+      LEDGERLY_MASTERPASS_BASEURL: http://masterpass-mock
+      LEDGERLY_MASTERPASS_BEARERTOKEN: FIXED_DEMO_TOKEN
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
+  mongodata:
+  redisdata:
+  kafkadata:

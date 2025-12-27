@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledgerly-config
+  namespace: ledgerly
+data:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  SPRING_REDIS_HOST: "redis"
+  SPRING_REDIS_PORT: "6379"
+  SPRING_DATA_MONGODB_URI: "mongodb://mongo:27017/ledgerly"
+  LEDGERLY_SECURITY_ENABLED: "false"
+  LEDGERLY_KAFKA_TOPICS_SAGACOMMANDS: "ledgerly.saga.commands"
+  LEDGERLY_KAFKA_TOPICS_DOMAINEVENTS: "ledgerly.domain.events"
+  LEDGERLY_KAFKA_TOPICS_AUDITEVENTS: "ledgerly.audit.events"
+  LEDGERLY_MASTERPASS_BASEURL: "http://masterpass-mock"
+  LEDGERLY_MASTERPASS_BEARERTOKEN: "FIXED_DEMO_TOKEN"

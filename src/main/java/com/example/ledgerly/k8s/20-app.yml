@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledgerly-app
+  namespace: ledgerly
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ledgerly-app
+  template:
+    metadata:
+      labels:
+        app: ledgerly-app
+    spec:
+      containers:
+        - name: app
+          image: legerdocker/ledgerly:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ledgerly-config
+            - secretRef:
+                name: ledgerly-db-secret
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledgerly-app
+  namespace: ledgerly
+spec:
+  selector:
+    app: ledgerly-app
+  ports:
+    - port: 80
+      targetPort: 8080
