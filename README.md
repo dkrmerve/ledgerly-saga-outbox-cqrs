@@ -137,14 +137,8 @@ All dependencies are provided via Docker Compose for local execution.
 ### Build the application (tests skipped)
 ./gradlew clean bootJar -x test
 
-sql
-Copy code
-
 ### Start the full system
 docker compose up --build
-
-arduino
-Copy code
 
 Application will be available at:
 http://localhost:8080
@@ -212,12 +206,6 @@ This project demonstrates:
 - Financial correctness
 - Distributed system thinking
 - Cloud and deployment awareness
-
-It is suitable for:
-- Backend engineering interviews
-- Architectural reviews
-- Independent professional / self-employed evaluations
-- IND (Netherlands) self-employment or highly skilled assessments
 
 ---
 
